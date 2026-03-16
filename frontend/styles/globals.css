@@ -1,0 +1,26 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg: #fafaf9;
+  --card: #ffffff;
+  --muted: #78716c;
+  --accent: #0d9488;
+  --accent-hover: #0f766e;
+  --border: #e7e5e4;
+  --error: #b91c1c;
+  --north-navy: #001f3f;
+  --compass-gold: #d4af37; /* The metallic gold we picked */
+  --soft-gray: #f4f4f9;
+}
+
+body {
+  color: #1c1917;
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
