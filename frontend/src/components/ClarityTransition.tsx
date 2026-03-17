@@ -5,6 +5,7 @@ import ActionPlan from "@/components/ActionPlan";
 import MessageSection from "@/components/MessageSection";
 import FollowUpHook from "@/components/FollowUpHook";
 import PossibleCauses from "@/components/PossibleCauses";
+import ResourceFeed from "@/components/ResourceFeed";
 import type { AnalysisResult } from "@/types";
 
 const cardStyle = {
@@ -39,6 +40,8 @@ export default function ClarityTransition({
   if (isProcessing) return null;
   if (!resultData) return null;
 
+  const topicHint = originalInput || resultData.situation;
+
   return (
     <div className="w-full">
       <AnimatePresence mode="wait">
@@ -53,7 +56,7 @@ export default function ClarityTransition({
               transition: { staggerChildren: 0.15, delayChildren: 0.08 },
             },
           }}
-          className="max-w-3xl mx-auto mt-8 px-4 space-y-6"
+          className="max-w-5xl mx-auto mt-8 px-4 space-y-6"
         >
           {onBack && (
                 <motion.button
@@ -98,61 +101,75 @@ export default function ClarityTransition({
                 <PossibleCauses causes={resultData.causes} />
               </motion.div>
 
-              {/* Action plan */}
-              <motion.div variants={{ hidden: { y: 20, opacity: 0 }, show: { y: 0, opacity: 1 } }}>
-                <ActionPlan steps={resultData.plan} />
-              </motion.div>
+              {/* Main + sidebar layout */}
+              <section className="mt-4 flex flex-col lg:flex-row gap-6 items-start">
+                {/* Sidebar: Resources for You */}
+                <motion.div
+                  variants={{ hidden: { y: 20, opacity: 0 }, show: { y: 0, opacity: 1 } }}
+                  className="w-full lg:w-[32%]"
+                >
+                  <ResourceFeed topic={topicHint} />
+                </motion.div>
 
-              {/* Message draft */}
-              <motion.div variants={{ hidden: { y: 20, opacity: 0 }, show: { y: 0, opacity: 1 } }}>
-                <MessageSection
-                  initialDraft={resultData.message || ""}
-                  isEmpty={!resultData.message}
-                />
-              </motion.div>
+                {/* Primary column: Action plan & tools */}
+                <div className="w-full lg:w-[68%] space-y-6">
+                  {/* Action plan */}
+                  <motion.div variants={{ hidden: { y: 20, opacity: 0 }, show: { y: 0, opacity: 1 } }}>
+                    <ActionPlan steps={resultData.plan} />
+                  </motion.div>
 
-              {/* Tools */}
-              <motion.div
-                variants={{ hidden: { y: 20, opacity: 0 }, show: { y: 0, opacity: 1 } }}
-                className="bg-white p-6 rounded-xl shadow-sm border"
-                style={{ borderColor: "var(--border)" }}
-              >
-                <h2 className="text-xs font-bold uppercase tracking-widest mb-4" style={{ color: "var(--north-navy)" }}>
-                  Tools
-                </h2>
-                <div className="flex flex-wrap gap-3">
-                  {onGenerateMessage && (
-                    <button
-                      onClick={onGenerateMessage}
-                      disabled={messageLoading}
-                      className="rounded-xl border border-stone-200 bg-white px-4 py-2.5 text-sm font-medium text-stone-700 hover:border-stone-300 hover:bg-white/80 transition-colors disabled:opacity-60"
-                    >
-                      {messageLoading ? "Generating…" : "Generate message"}
-                    </button>
-                  )}
-                  {onAdjustPlan && (
-                    <button
-                      onClick={onAdjustPlan}
-                      className="rounded-xl border border-stone-200 bg-white px-4 py-2.5 text-sm font-medium text-stone-700 hover:border-stone-300 hover:bg-white/80 transition-colors"
-                    >
-                      Adjust plan
-                    </button>
-                  )}
-                  {onFollowUp && (
-                    <button
-                      onClick={onFollowUp}
-                      className="rounded-xl border border-stone-200 bg-white px-4 py-2.5 text-sm font-medium text-stone-700 hover:border-stone-300 hover:bg-white/80 transition-colors"
-                    >
-                      Ask follow-up
-                    </button>
-                  )}
+                  {/* Message draft */}
+                  <motion.div variants={{ hidden: { y: 20, opacity: 0 }, show: { y: 0, opacity: 1 } }}>
+                    <MessageSection
+                      initialDraft={resultData.message || ""}
+                      isEmpty={!resultData.message}
+                    />
+                  </motion.div>
+
+                  {/* Tools */}
+                  <motion.div
+                    variants={{ hidden: { y: 20, opacity: 0 }, show: { y: 0, opacity: 1 } }}
+                    className="bg-white p-6 rounded-xl shadow-sm border"
+                    style={{ borderColor: "var(--border)" }}
+                  >
+                    <h2 className="text-xs font-bold uppercase tracking-widest mb-4" style={{ color: "var(--north-navy)" }}>
+                      Tools
+                    </h2>
+                    <div className="flex flex-wrap gap-3">
+                      {onGenerateMessage && (
+                        <button
+                          onClick={onGenerateMessage}
+                          disabled={messageLoading}
+                          className="rounded-xl border border-stone-200 bg-white px-4 py-2.5 text-sm font-medium text-stone-700 hover:border-stone-300 hover:bg-white/80 transition-colors disabled:opacity-60"
+                        >
+                          {messageLoading ? "Generating…" : "Generate message"}
+                        </button>
+                      )}
+                      {onAdjustPlan && (
+                        <button
+                          onClick={onAdjustPlan}
+                          className="rounded-xl border border-stone-200 bg-white px-4 py-2.5 text-sm font-medium text-stone-700 hover:border-stone-300 hover:bg-white/80 transition-colors"
+                        >
+                          Adjust plan
+                        </button>
+                      )}
+                      {onFollowUp && (
+                        <button
+                          onClick={onFollowUp}
+                          className="rounded-xl border border-stone-200 bg-white px-4 py-2.5 text-sm font-medium text-stone-700 hover:border-stone-300 hover:bg-white/80 transition-colors"
+                        >
+                          Ask follow-up
+                        </button>
+                      )}
+                    </div>
+                  </motion.div>
+
+                  {/* Follow-up hook */}
+                  <motion.div variants={{ hidden: { y: 20, opacity: 0 }, show: { y: 0, opacity: 1 } }}>
+                    <FollowUpHook />
+                  </motion.div>
                 </div>
-              </motion.div>
-
-              {/* Follow-up hook */}
-              <motion.div variants={{ hidden: { y: 20, opacity: 0 }, show: { y: 0, opacity: 1 } }}>
-                <FollowUpHook />
-              </motion.div>
+              </section>
         </motion.main>
       </AnimatePresence>
     </div>

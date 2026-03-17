@@ -8,11 +8,13 @@ import NorthLoader from "@/components/NorthLoader";
 import { getAnalysis, getMessage } from "@/lib/api";
 import type { AnalysisResult } from "@/types";
 
-const MIN_LOADING_MS = 2000;
+/** Minimum time loader is visible (wiggle + lock + hold at North). Must match NorthLoader timing. */
+const MIN_LOADING_MS = 2600;
 
 export default function LifeAssistApp() {
   const [view, setView] = useState<"home" | "results">("home");
   const [loading, setLoading] = useState(false);
+  const [lockComplete, setLockComplete] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [originalInput, setOriginalInput] = useState("");
   const [result, setResult] = useState<AnalysisResult | null>(null);
@@ -21,10 +23,21 @@ export default function LifeAssistApp() {
 
   const runAnalysis = (input: string) => {
     setError(null);
+    setLockComplete(false);
     setOriginalInput(input);
     pendingInputRef.current = input;
     setLoading(true);
   };
+
+  // Transition to results only after needle has locked to North (onLockComplete) and we have data.
+  useEffect(() => {
+    if (result && lockComplete && loading) {
+      setView("results");
+      setLoading(false);
+      setLockComplete(false);
+      pendingInputRef.current = null;
+    }
+  }, [result, lockComplete, loading]);
 
   useEffect(() => {
     if (!loading || pendingInputRef.current === null) return;
@@ -42,13 +55,9 @@ export default function LifeAssistApp() {
         await new Promise((r) => setTimeout(r, Math.max(0, MIN_LOADING_MS - elapsed)));
         if (cancelled) return;
         setResult(data);
-        setView("results");
       } catch (e) {
         if (!cancelled) {
           setError(e instanceof Error ? e.message : "Something went wrong.");
-        }
-      } finally {
-        if (!cancelled) {
           setLoading(false);
           pendingInputRef.current = null;
         }
@@ -83,7 +92,7 @@ export default function LifeAssistApp() {
           {error}
         </div>
       )}
-      <NorthLoader show={loading} />
+      <NorthLoader show={loading} onLockComplete={() => setLockComplete(true)} />
       {showResults ? (
         <div className="min-h-screen bg-gray-50 pb-12">
           <Header />
