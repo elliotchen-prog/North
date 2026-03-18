@@ -7,13 +7,20 @@ const TONES = ["Professional", "Direct", "Gentle"] as const;
 interface MessageSectionProps {
   initialDraft: string;
   isEmpty?: boolean;
+  onToneChange?: (tone: string) => void;
+  messageLoading?: boolean;
 }
 
-export default function MessageSection({ initialDraft, isEmpty }: MessageSectionProps) {
+export default function MessageSection({ initialDraft, isEmpty, onToneChange, messageLoading }: MessageSectionProps) {
   const [tone, setTone] = useState<(typeof TONES)[number]>("Professional");
   const [copied, setCopied] = useState(false);
   const draftText = (initialDraft || "").trim();
   const hasDraft = draftText.length > 0 && !isEmpty;
+
+  const handleToneClick = (t: (typeof TONES)[number]) => {
+    setTone(t);
+    onToneChange?.(t);
+  };
 
   const handleCopy = async () => {
     if (!hasDraft) return;
@@ -52,8 +59,9 @@ export default function MessageSection({ initialDraft, isEmpty }: MessageSection
             <button
               key={t}
               type="button"
-              onClick={() => setTone(t)}
-              className={`px-3 py-1 text-xs rounded-md transition-all ${
+              onClick={() => handleToneClick(t)}
+              disabled={messageLoading}
+              className={`px-3 py-1 text-xs rounded-md transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
                 tone === t
                   ? "text-white shadow-lg"
                   : "text-slate-400 hover:text-white"

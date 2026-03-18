@@ -1,10 +1,43 @@
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api";
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "/api";
 
 export interface AnalysisResult {
   situation: string;
   causes: string[];
   plan: string[];
   message?: string;
+}
+
+function ensureString(value: unknown): string {
+  if (value == null) return "";
+  if (typeof value === "string") return value;
+  return String(value);
+}
+
+function ensureStringArray(value: unknown): string[] {
+  if (value == null) return [];
+  if (Array.isArray(value))
+    return value.map((v) => (v != null ? String(v) : "")).filter(Boolean);
+  if (typeof value === "string") return value ? [value] : [];
+  return [];
+}
+
+/** Parse and normalize /analyze response so frontend always gets a valid AnalysisResult. */
+function parseAnalysisResponse(body: unknown): AnalysisResult {
+  const o = body && typeof body === "object" ? (body as Record<string, unknown>) : {};
+  return {
+    situation: ensureString(o.situation).trim() || "Your situation",
+    causes: ensureStringArray(o.causes),
+    plan: ensureStringArray(o.plan),
+    message:
+      o.message != null ? ensureString(o.message).trim() || undefined : undefined,
+  };
+}
+
+/** Parse and normalize /message response so frontend always gets { message: string }. */
+function parseMessageResponse(body: unknown): { message: string } {
+  const o = body && typeof body === "object" ? (body as Record<string, unknown>) : {};
+  const message = ensureString(o.message).trim();
+  return { message: message || "I'd like to talk this through when you have a moment." };
 }
 
 export async function analyzeSituation(
@@ -15,27 +48,32 @@ export async function analyzeSituation(
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ input: userInput }),
   });
+  const body = await res.json().catch(() => ({}));
   if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error((err as { message?: string }).message || res.statusText);
+    throw new Error((body as { message?: string }).message || res.statusText);
   }
-  return res.json();
+  return parseAnalysisResponse(body);
 }
 
 export async function generateMessage(
   userInput: string,
-  context: AnalysisResult
+  context: AnalysisResult,
+  tone?: string
 ): Promise<{ message: string }> {
   const res = await fetch(`${API_BASE}/message`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ input: userInput, situation: context }),
+    body: JSON.stringify({
+      input: userInput,
+      situation: context,
+      ...(tone && { tone }),
+    }),
   });
+  const body = await res.json().catch(() => ({}));
   if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error((err as { message?: string }).message || res.statusText);
+    throw new Error((body as { message?: string }).message || res.statusText);
   }
-  return res.json();
+  return parseMessageResponse(body);
 }
 
 const USE_MOCK = process.env.NEXT_PUBLIC_USE_MOCK_API !== "false";
@@ -47,17 +85,20 @@ export async function getAnalysis(userInput: string): Promise<AnalysisResult> {
 
 export async function getMessage(
   userInput: string,
-  context: AnalysisResult
+  context: AnalysisResult,
+  tone?: string
 ): Promise<{ message: string }> {
-  if (USE_MOCK) return mockGenerateMessage(context);
-  return generateMessage(userInput, context);
+  if (USE_MOCK) return mockGenerateMessage(context, tone);
+  return generateMessage(userInput, context, tone);
 }
 
 async function mockGenerateMessage(
-  context: AnalysisResult
+  context: AnalysisResult,
+  tone?: string
 ): Promise<{ message: string }> {
   await new Promise((r) => setTimeout(r, 600));
-  const template =
+  const t = (tone || "Professional").toLowerCase();
+  let template =
     context.situation.toLowerCase().includes("work") ||
     context.situation.toLowerCase().includes("stress")
       ? "Hi [Manager], I want to make sure I'm focusing on the right priorities. Could we briefly review my current tasks and confirm what should come first?"
@@ -65,6 +106,8 @@ async function mockGenerateMessage(
         context.situation.toLowerCase().includes("conflict")
         ? "Hi, I'd like to find a way we can both feel good about this. Can we set a time to talk when we're both calm?"
         : "Hi, I've been thinking about what we discussed. I'd like to share my perspective and hear yours when you have a moment.";
+  if (t === "direct") template = "Can we sync on priorities and next steps? I'd like to align and move forward.";
+  if (t === "gentle") template = "I've been reflecting on this and would really value a chance to talk when you're free. No rush—just whenever works for you.";
   return { message: template };
 }
 

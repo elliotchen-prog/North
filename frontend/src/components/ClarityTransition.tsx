@@ -22,6 +22,7 @@ interface ClarityTransitionProps {
   originalInput?: string;
   onBack?: () => void;
   onGenerateMessage?: () => void;
+  onToneChange?: (tone: string) => void;
   onAdjustPlan?: () => void;
   onFollowUp?: () => void;
   messageLoading?: boolean;
@@ -33,6 +34,7 @@ export default function ClarityTransition({
   originalInput = "",
   onBack,
   onGenerateMessage,
+  onToneChange,
   onAdjustPlan,
   onFollowUp,
   messageLoading,
@@ -123,6 +125,8 @@ export default function ClarityTransition({
                     <MessageSection
                       initialDraft={resultData.message || ""}
                       isEmpty={!resultData.message}
+                      onToneChange={onToneChange}
+                      messageLoading={messageLoading}
                     />
                   </motion.div>
 
