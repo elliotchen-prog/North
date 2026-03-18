@@ -6,127 +6,164 @@ interface ResourceArticle {
   description: string;
   readTime: string;
   source: string;
+  url: string;
 }
 
-function getMockResources(topic: string): ResourceArticle[] {
+function getResourcesForTopic(topic: string): ResourceArticle[] {
   const lower = topic.toLowerCase();
 
-  if (lower.includes("depress") || lower.includes("mood") || lower.includes("mental")) {
+  if (
+    lower.includes("depress") ||
+    lower.includes("mood") ||
+    lower.includes("mental") ||
+    lower.includes("anxiety") ||
+    lower.includes("overwhelm") && (lower.includes("feel") || lower.includes("emotional"))
+  ) {
     return [
       {
-        id: "depression-1",
-        title: "Understanding the Science of Mood",
-        description: "A simple breakdown of how brain chemistry, sleep, and stress shape the way you feel day to day.",
-        readTime: "8 min read",
-        source: "North Library",
+        id: "mental-1",
+        title: "Mental Health and Self-Care",
+        description: "Evidence-based information on mental health, stress, and when to seek support.",
+        readTime: "5 min read",
+        source: "mentalhealth.gov",
+        url: "https://www.mentalhealth.gov/basics/what-is-mental-health",
       },
       {
-        id: "depression-2",
-        title: "5 Daily Habits for Mental Clarity",
-        description: "Tiny, evidence-backed routines you can stack onto what you already do—no full life makeover required.",
+        id: "mental-2",
+        title: "Coping with Stress and Low Mood",
+        description: "Practical strategies and resources for managing daily stress and low mood.",
         readTime: "6 min read",
-        source: "Behavioral Insights",
+        source: "Mind",
+        url: "https://www.mind.org.uk/information-support/types-of-mental-health-problems/stress/",
       },
       {
-        id: "depression-3",
-        title: "What to Do on a Heavy Day",
-        description: "A light checklist for when your energy is low but you still want to take one kind step for yourself.",
+        id: "mental-3",
+        title: "NAMI Resources and Support",
+        description: "Information and support for mental health from the National Alliance on Mental Illness.",
         readTime: "4 min read",
-        source: "North Guides",
+        source: "NAMI",
+        url: "https://www.nami.org/About-Mental-Illness/Mental-Health-Conditions",
       },
     ];
   }
 
-  if (lower.includes("work") || lower.includes("job") || lower.includes("career") || lower.includes("burnout")) {
+  if (
+    lower.includes("work") ||
+    lower.includes("job") ||
+    lower.includes("career") ||
+    lower.includes("burnout") ||
+    lower.includes("overwhelm") ||
+    lower.includes("stress") ||
+    lower.includes("presentation") ||
+    lower.includes("manager") ||
+    lower.includes("workload")
+  ) {
     return [
       {
         id: "work-1",
-        title: "Resetting Your Relationship With Work",
-        description: "How to separate your identity from your to-do list and still move your career forward.",
-        readTime: "7 min read",
-        source: "North Careers",
+        title: "Job Burnout: How to Spot It and Take Action",
+        description: "Signs of burnout and practical steps to protect your well-being at work.",
+        readTime: "6 min read",
+        source: "Mayo Clinic",
+        url: "https://www.mayoclinic.org/healthy-lifestyle/adult-health/in-depth/burnout/art-20046642",
       },
       {
         id: "work-2",
-        title: "Designing a Sustainable Workday",
-        description: "A practical framework to balance focus time, admin, and recovery without feeling guilty.",
-        readTime: "9 min read",
-        source: "Productivity Lab",
+        title: "How to Have a Difficult Conversation with Your Boss",
+        description: "Frameworks for discussing workload, boundaries, and priorities professionally.",
+        readTime: "8 min read",
+        source: "Harvard Business Review",
+        url: "https://hbr.org/2022/01/how-to-have-a-difficult-conversation-with-your-boss",
       },
       {
         id: "work-3",
-        title: "Talking to Your Manager About Capacity",
-        description: "Language you can borrow to set boundaries while still sounding like a team player.",
+        title: "Managing Work-Related Stress",
+        description: "Evidence-based tips to reduce stress and set sustainable boundaries.",
         readTime: "5 min read",
-        source: "North Playbook",
+        source: "Mind",
+        url: "https://www.mind.org.uk/information-support/types-of-mental-health-problems/stress/workplace-stress/",
       },
     ];
   }
 
-  if (lower.includes("relationship") || lower.includes("partner") || lower.includes("roommate") || lower.includes("family")) {
+  if (
+    lower.includes("relationship") ||
+    lower.includes("partner") ||
+    lower.includes("roommate") ||
+    lower.includes("family") ||
+    lower.includes("conflict") ||
+    lower.includes("argument") ||
+    lower.includes("communication")
+  ) {
     return [
       {
-        id: "relationship-1",
-        title: "From Reacting to Responding",
-        description: "A 3-step pause you can use in almost any tense conversation to keep things from escalating.",
-        readTime: "5 min read",
-        source: "North Communication",
-      },
-      {
-        id: "relationship-2",
-        title: "How to Share a Hard Truth",
-        description: "A simple script for bringing up sensitive topics without blindsiding the other person.",
+        id: "rel-1",
+        title: "The Four Horsemen: Criticism, Contempt, Defensiveness, and Stonewalling",
+        description: "Research-backed patterns that harm relationships and how to replace them.",
         readTime: "7 min read",
-        source: "North Guides",
+        source: "The Gottman Institute",
+        url: "https://www.gottman.com/blog/the-four-horsemen-recognizing-criticism-contempt-defensiveness-and-stonewalling/",
       },
       {
-        id: "relationship-3",
-        title: "Repairing After an Argument",
-        description: "Concrete phrases and small gestures that rebuild trust after things got heated.",
-        readTime: "4 min read",
-        source: "Everyday Psychology",
+        id: "rel-2",
+        title: "How to Have Difficult Conversations",
+        description: "A practical guide to bringing up hard topics without escalating conflict.",
+        readTime: "6 min read",
+        source: "Mind Tools",
+        url: "https://www.mindtools.com/ax0bx0u/having-difficult-conversations",
+      },
+      {
+        id: "rel-3",
+        title: "Conflict Resolution Skills",
+        description: "Steps and phrases that help resolve disagreements and repair trust.",
+        readTime: "5 min read",
+        source: "HelpGuide",
+        url: "https://www.helpguide.org/articles/relationships-communication/conflict-resolution-skills.htm",
       },
     ];
   }
 
-  // Default, general-purpose resources.
+  // General / life clarity
   return [
     {
-      id: "general-1",
-      title: "Zooming Out: A 10-Minute Life Review",
-      description: "A guided reflection to quickly see which area of life is asking for your attention right now.",
+      id: "gen-1",
+      title: "How to Make Hard Decisions",
+      description: "A simple framework to clarify what matters and choose when you feel stuck.",
       readTime: "10 min read",
-      source: "North Library",
+      source: "TED Ideas",
+      url: "https://ideas.ted.com/how-to-make-a-tough-decision/",
     },
     {
-      id: "general-2",
-      title: "Making Progress When You Feel Stuck",
-      description: "Tiny, low-pressure moves that still count as real momentum toward the life you want.",
+      id: "gen-2",
+      title: "Coping with Change and Uncertainty",
+      description: "Practical ways to stay grounded when things feel uncertain.",
       readTime: "6 min read",
-      source: "Behavioral Insights",
+      source: "Mind",
+      url: "https://www.mind.org.uk/information-support/types-of-mental-health-problems/coping-with-change/",
     },
     {
-      id: "general-3",
-      title: "Designing Your Next Week With Intention",
-      description: "A short planning ritual that turns vague goals into 1–3 concrete, doable commitments.",
+      id: "gen-3",
+      title: "Setting Personal Boundaries",
+      description: "Why boundaries help and how to set them without guilt.",
       readTime: "8 min read",
-      source: "North Playbook",
+      source: "Psych Central",
+      url: "https://psychcentral.com/lib/how-to-create-and-maintain-healthy-boundaries",
     },
-  ];
-}
+    ];
+  }
 
 interface ResourceFeedProps {
   topic: string;
 }
 
 export default function ResourceFeed({ topic }: ResourceFeedProps) {
-  const articles = getMockResources(topic || "your situation");
+  const articles = getResourcesForTopic(topic || "your situation");
 
   return (
     <aside
       className="rounded-xl p-4 sm:p-5 lg:p-6 text-sm space-y-4"
       style={{
-        backgroundColor: "#020617", // slate-900
+        backgroundColor: "#020617",
         boxShadow: "0 16px 40px rgba(15,23,42,0.65)",
       }}
     >
@@ -141,9 +178,12 @@ export default function ResourceFeed({ topic }: ResourceFeedProps) {
 
       <div className="space-y-3">
         {articles.map((article) => (
-          <div
+          <a
             key={article.id}
-            className="rounded-lg border border-slate-700/60 bg-slate-900/40 px-3 py-3 sm:px-4 sm:py-3.5"
+            href={article.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="block rounded-lg border border-slate-700/60 bg-slate-900/40 px-3 py-3 sm:px-4 sm:py-3.5 hover:border-slate-600 hover:bg-slate-800/50 transition-colors"
           >
             <p className="text-xs uppercase tracking-[0.18em] text-slate-500 mb-1">
               {article.source}
@@ -156,15 +196,11 @@ export default function ResourceFeed({ topic }: ResourceFeedProps) {
             </p>
             <div className="flex items-center justify-between text-[11px]">
               <span className="text-slate-400">{article.readTime}</span>
-              <button
-                type="button"
-                className="font-semibold tracking-wide"
-                style={{ color: "var(--accent)" }}
-              >
+              <span className="font-semibold tracking-wide" style={{ color: "var(--accent)" }}>
                 Read more →
-              </button>
+              </span>
             </div>
-          </div>
+          </a>
         ))}
       </div>
     </aside>

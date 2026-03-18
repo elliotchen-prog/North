@@ -69,12 +69,12 @@ export default function LifeAssistApp() {
     };
   }, [loading]);
 
-  const handleGenerateMessage = async () => {
+  const handleGenerateMessage = async (tone?: string) => {
     if (!result) return;
     setMessageLoading(true);
     try {
       const { getMessage } = await import("@/lib/api");
-      const { message } = await getMessage(originalInput, result);
+      const { message } = await getMessage(originalInput, result, tone ?? "Professional");
       setResult((prev) => (prev ? { ...prev, message } : null));
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not generate message.");
@@ -104,7 +104,8 @@ export default function LifeAssistApp() {
               setView("home");
               setError(null);
             }}
-            onGenerateMessage={handleGenerateMessage}
+            onGenerateMessage={() => handleGenerateMessage()}
+            onToneChange={(tone) => handleGenerateMessage(tone)}
             onAdjustPlan={() => {}}
             onFollowUp={() => {}}
             messageLoading={messageLoading}

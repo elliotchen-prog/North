@@ -1,1 +1,0 @@
-self.__REACT_LOADABLE_MANIFEST="{\"src/components/LifeAssistApp.tsx -> @/lib/api\":{\"id\":\"src/components/LifeAssistApp.tsx -> @/lib/api\",\"files\":[]}}"
