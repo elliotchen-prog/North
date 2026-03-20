@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { parseActionStep } from "@/lib/llm/actionStep";
 
 interface ActionPlanProps {
   steps: string[];
@@ -70,15 +71,39 @@ export default function ActionPlan({ steps }: ActionPlanProps) {
               )}
             </div>
 
-            <span
-              className={`text-base transition-all ${
-                checkedSteps[index]
-                  ? "text-stone-400 line-through"
-                  : "text-stone-700 font-medium"
-              }`}
-            >
-              {index + 1}. {step}
-            </span>
+            <div className="flex-1 min-w-0">
+              <div
+                className={`text-base transition-all ${
+                  checkedSteps[index] ? "text-stone-400 line-through" : "text-stone-700 font-medium"
+                }`}
+              >
+                {index + 1}. {(() => {
+                  const parsed = parseActionStep(step);
+                  return parsed ? parsed.move : step;
+                })()}
+              </div>
+
+              {(() => {
+                const parsed = parseActionStep(step);
+                if (!parsed) return null;
+                return (
+                  <div className="mt-1 flex flex-wrap gap-x-2 gap-y-1 items-center text-xs">
+                    <span className="px-2 py-0.5 rounded-full bg-stone-50 border border-stone-200 text-stone-700">
+                      Window: {parsed.window}
+                    </span>
+                    <span className="text-stone-500">
+                      Impact:{" "}
+                      <span className={checkedSteps[index] ? "text-stone-400" : "text-stone-700 font-medium"}>
+                        {parsed.impact}
+                      </span>
+                    </span>
+                    <span className="text-stone-500 italic">
+                      Mindset: {parsed.mindset}
+                    </span>
+                  </div>
+                );
+              })()}
+            </div>
           </div>
         ))}
       </div>

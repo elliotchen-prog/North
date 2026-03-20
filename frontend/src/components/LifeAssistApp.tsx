@@ -92,7 +92,11 @@ export default function LifeAssistApp() {
           {error}
         </div>
       )}
-      <NorthLoader show={loading} onLockComplete={() => setLockComplete(true)} />
+      <NorthLoader
+        show={loading}
+        readyToLock={result !== null}
+        onLockComplete={() => setLockComplete(true)}
+      />
       {showResults ? (
         <div className="min-h-screen bg-gray-50 pb-12">
           <Header />

@@ -42,7 +42,10 @@ export default function ClarityTransition({
   if (isProcessing) return null;
   if (!resultData) return null;
 
-  const topicHint = originalInput || resultData.situation;
+  // Drive resources from the action plan so links are aligned to what you're going to do next.
+  const topicHint = resultData.plan?.length
+    ? resultData.plan.join(" ")
+    : originalInput || resultData.situation;
 
   return (
     <div className="w-full">

@@ -1,3 +1,5 @@
+import type { ResourceArticle } from "@/types";
+
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "/api";
 
 export interface AnalysisResult {
@@ -5,6 +7,30 @@ export interface AnalysisResult {
   causes: string[];
   plan: string[];
   message?: string;
+}
+
+function parseResourcesResponse(body: unknown): ResourceArticle[] {
+  const arr = body && typeof body === "object" ? (body as any).resources : null;
+  if (!Array.isArray(arr)) return [];
+
+  return arr
+    .map((r: any, idx: number) => {
+      const url = typeof r?.url === "string" ? r.url : "";
+      const title = typeof r?.title === "string" ? r.title : "";
+      const description = typeof r?.description === "string" ? r.description : "";
+      const readTime = typeof r?.readTime === "string" ? r.readTime : "";
+      const source = typeof r?.source === "string" ? r.source : "";
+      if (!url || !title) return null;
+      return {
+        id: typeof r?.id === "string" ? r.id : `resource-${idx}`,
+        title,
+        description: description || "Learn more",
+        readTime: readTime || "Recommended",
+        source: source || "Resource",
+        url,
+      } satisfies ResourceArticle;
+    })
+    .filter(Boolean) as ResourceArticle[];
 }
 
 function ensureString(value: unknown): string {
@@ -90,6 +116,52 @@ export async function getMessage(
 ): Promise<{ message: string }> {
   if (USE_MOCK) return mockGenerateMessage(context, tone);
   return generateMessage(userInput, context, tone);
+}
+
+export async function getResourcesForPlan(planText: string): Promise<ResourceArticle[]> {
+  if (USE_MOCK) return mockResourcesForPlan(planText);
+
+  const res = await fetch(`${API_BASE}/resources`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ plan: planText }),
+  });
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error((body as { message?: string }).message || res.statusText);
+  }
+  return parseResourcesResponse(body);
+}
+
+async function mockResourcesForPlan(_planText: string): Promise<ResourceArticle[]> {
+  // Keep mock simple; real behavior comes from the runtime model call.
+  await new Promise((r) => setTimeout(r, 250));
+  return [
+    {
+      id: "mock-1",
+      title: "How to turn a plan into action (quick framework)",
+      description: "A short guide to choosing the next right step and reducing overwhelm.",
+      readTime: "5 min read",
+      source: "North Guides",
+      url: "https://www.mindtools.com/a4v4m2b/choosing-your-next-step",
+    },
+    {
+      id: "mock-2",
+      title: "Evidence-backed stress coping strategies",
+      description: "Practical techniques that help you steady yourself and act with clarity.",
+      readTime: "6 min read",
+      source: "Mind",
+      url: "https://www.mind.org.uk/information-support/types-of-mental-health-problems/stress/",
+    },
+    {
+      id: "mock-3",
+      title: "Boundary setting basics",
+      description: "Learn how boundaries create capacity and reduce friction.",
+      readTime: "8 min read",
+      source: "Psych Central",
+      url: "https://psychcentral.com/lib/how-to-create-and-maintain-healthy-boundaries",
+    },
+  ];
 }
 
 async function mockGenerateMessage(
