@@ -5,6 +5,15 @@ export interface AnalysisResult {
   message?: string;
 }
 
+export interface ResourceArticle {
+  id: string;
+  title: string;
+  description: string;
+  readTime: string;
+  source: string;
+  url: string;
+}
+
 export type SituationCategory =
   | "work stress"
   | "relationship conflict"

@@ -3,6 +3,8 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
 const DEFAULT_MODEL = 'openrouter/hunter-alpha';
 
+import { parseAnalysisTextToResult } from "@/lib/llm/parse";
+
 /** Ensure value is a string for the frontend. */
 function ensureString(value: unknown): string {
   if (value == null) return '';
@@ -41,7 +43,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const { input } = req.body;
   if (!input) return res.status(400).json({ message: 'Missing input' });
 
-  const systemPrompt = `You are an AI life assistant. Analyze the user's situation and return ONLY a single valid JSON object (no markdown, no extra text) with exactly these keys: "situation" (one short sentence), "causes" (array of 2-4 short strings), "plan" (array of 2-4 short action steps), "message" (one short communication draft). Keep every string brief so the full JSON fits in one response. Example: {"situation":"Work overload","causes":["Too many tasks","Unclear priorities"],"plan":["List top 3 priorities","Talk to manager"],"message":"Hi, can we align on priorities?"}`;
+  const systemPrompt = `You are an elite-level life coach + behavioral analyst.
+Decode the user's situation beneath the surface:
+surface problem -> real problem -> emotional state -> hidden beliefs -> stakes.
+Then produce causes labeled PRIMARY / CONTRIBUTING / UNDERLYING (choose 3-6 based on complexity) and an immediately actionable plan with 3-8 steps.
+
+OUTPUT FORMAT (MUST BE EXACT):
+Return ONLY a single valid JSON object (no markdown, no extra text) with exactly these keys:
+"situation": string (one short sentence; the real decoded problem),
+"causes": array of strings (3-6 items; each must include PRIMARY / CONTRIBUTING / UNDERLYING),
+"plan": array of strings (3-8 items; each string must follow: MOVE: ... | WINDOW: ... | IMPACT: ... | MINDSET: ...),
+"message": string (one short communication draft).
+
+Keep strings brief so the whole JSON fits in one response. Example:
+{"situation":"Work overload","causes":["PRIMARY: Too many urgent demands","CONTRIBUTING: Unclear priorities","UNDERLYING: Fear of saying no"],"plan":["MOVE: Identify top 3 priorities | WINDOW: Today | IMPACT: clarity | MINDSET: I drive my focus","MOVE: Draft what I will drop + what I will do | WINDOW: Within 48 hours | IMPACT: reduced overload | MINDSET: I protect my capacity","MOVE: Talk to manager about scope | WINDOW: Within 48 hours | IMPACT: alignment | MINDSET: I set boundaries"],"message":"Hi—can we align on priorities and agree what drops off my plate?"}`;
 
   try {
     const llmRes = await fetch(OPENROUTER_URL, {
@@ -75,68 +90,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     const choices = data.choices as Array<{ message?: { content?: string } }> | undefined;
-    let text = choices?.[0]?.message?.content ?? '';
-    text = String(text).replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```\s*$/i, '').trim();
-    const jsonStart = text.indexOf('{');
-    let parsed: Record<string, unknown> | null = null;
-
-    const tryParse = (str: string): Record<string, unknown> | null => {
-      const end = str.lastIndexOf('}');
-      if (end === -1) return null;
-      try {
-        const obj = JSON.parse(str.slice(str.indexOf('{'), end + 1)) as Record<string, unknown>;
-        return obj && typeof obj === 'object' ? obj : null;
-      } catch {
-        return null;
-      }
-    };
-
-    parsed = tryParse(text);
-    if (!parsed && jsonStart !== -1) {
-      const trimmed = text.slice(jsonStart);
-      const repairAttempts = [
-        trimmed + '" }',           // truncated in the middle of a string value
-        trimmed.replace(/,?\s*$/, ' }'), // truncated after a comma or space
-      ];
-      for (const repaired of repairAttempts) {
-        parsed = tryParse(repaired);
-        if (parsed) break;
-      }
-    }
-
-    if (!parsed || typeof parsed !== 'object') {
-      const raw = text.slice(jsonStart);
-      const situationMatch = raw.match(/"situation"\s*:\s*"((?:[^"\\]|\\.)*)/);
-      const situationSnippet = situationMatch ? situationMatch[1].replace(/\\./g, (m) => m).trim().slice(0, 300) : '';
-
-      const extractStringArray = (key: string): string[] => {
-        const keyRe = new RegExp(`"${key}"\\s*:\\s*\\[`, 'i');
-        const keyMatch = raw.match(keyRe);
-        if (!keyMatch || keyMatch.index === undefined) return [];
-        const start = keyMatch.index + keyMatch[0].length;
-        let rest = raw.slice(start);
-        const nextKey = rest.match(/\n\s*"(?:situation|causes|plan|message)"\s*:/);
-        if (nextKey && nextKey.index !== undefined) rest = rest.slice(0, nextKey.index);
-        const items: string[] = [];
-        const quoted = rest.match(/"([^"]*)"/g);
-        if (quoted) for (const q of quoted) items.push(q.slice(1, -1).trim().slice(0, 200));
-        return items.slice(0, 6);
-      };
-
-      const causes = extractStringArray('causes');
-      const plan = extractStringArray('plan');
-      const messageMatch = raw.match(/"message"\s*:\s*"((?:[^"\\]|\\.)*)/);
-      const messageSnippet = messageMatch ? messageMatch[1].replace(/\\./g, (m) => m).trim().slice(0, 500) : '';
-
-      console.warn('OpenRouter response not parseable as JSON, using extracted fallback. Raw:', text.slice(0, 500));
-      parsed = {
-        situation: situationSnippet || 'Your situation',
-        causes: causes.length ? causes : ['Reflecting on what’s going on', 'Considering next steps'],
-        plan: plan.length ? plan : ['Write down the main issue in one sentence', 'Pick one small action you can take today', 'Review tomorrow and adjust'],
-        message: messageSnippet || "I've been reflecting on this and would like to talk it through. Can we find a time to connect?",
-      };
-    }
-    const result = normalizeAnalysisResult(parsed);
+    const llmText = String(choices?.[0]?.message?.content ?? "");
+    const result = parseAnalysisTextToResult(llmText);
     res.status(200).json(result);
   } catch (err) {
     console.error('Analyze handler error:', err);

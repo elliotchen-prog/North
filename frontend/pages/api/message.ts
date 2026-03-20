@@ -3,6 +3,8 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
 const DEFAULT_MODEL = 'openrouter/hunter-alpha';
 
+import { parseMessageTextToResult } from "@/lib/llm/parse";
+
 function ensureString(value: unknown): string {
   if (value == null) return '';
   if (typeof value === 'string') return value;
@@ -24,7 +26,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   if (!input || !situation) return res.status(400).json({ message: 'Missing input or situation' });
   const toneLabel = typeof tone === 'string' && tone.trim() ? tone.trim() : 'Professional';
 
-  const systemPrompt = `You are an AI life assistant. Given the user's situation and context, generate a short communication draft message. Write the message in a ${toneLabel} tone. Return ONLY a JSON object: { "message": "your draft here" }. No markdown, no extra text. Keep the message brief.`;
+  const systemPrompt = `You are an elite-level life coach.
+Write a short communication draft in a ${toneLabel} tone.
+Use the provided situation context to sound precise, not generic.
+
+Return ONLY a single valid JSON object (no markdown, no extra text):
+{ "message": "your draft here" }
+
+Message rules:
+- 1-3 short sentences
+- include one crisp pattern-interrupt reframe sentence if it fits
+- end with a clear next step request (a question or ask)`;
 
   try {
     const llmRes = await fetch(OPENROUTER_URL, {
@@ -57,27 +69,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     const choices = data.choices as Array<{ message?: { content?: string } }> | undefined;
-    const rawText = String(choices?.[0]?.message?.content ?? '')
-      .replace(/^```json\s*/i, '')
-      .replace(/^```\s*/i, '')
-      .replace(/```\s*$/i, '')
-      .trim();
-    const jsonStart = rawText.indexOf('{');
-    const jsonEnd = rawText.lastIndexOf('}');
-    let parsed: Record<string, unknown> | null = null;
-    if (jsonStart !== -1 && jsonEnd !== -1) {
-      try {
-        parsed = JSON.parse(rawText.slice(jsonStart, jsonEnd + 1)) as Record<string, unknown>;
-      } catch {
-        // ignore
-      }
-    }
-
-    if (!parsed || typeof parsed !== 'object') {
-      console.warn('OpenRouter message response not parseable, using fallback. Raw:', rawText.slice(0, 300));
-      parsed = { message: "I'd like to talk this through when you have a moment." };
-    }
-    const result = normalizeMessageResult(parsed);
+    const llmText = String(choices?.[0]?.message?.content ?? "");
+    const result = parseMessageTextToResult(llmText);
     res.status(200).json(result);
   } catch (err) {
     console.error('Message handler error:', err);

@@ -26,17 +26,17 @@ export default function PossibleCauses({ causes }: PossibleCausesProps) {
         </h3>
       </div>
 
-      <div className="flex flex-wrap gap-2">
+      <ul className="flex flex-col gap-2 list-none p-0 m-0">
         {causes.map((cause, index) => (
-          <span
+          <li
             key={index}
-            className="px-3 py-1 bg-white border border-amber-200 text-amber-900 text-sm rounded-full shadow-sm flex items-center gap-2"
+            className="px-3 py-2 bg-white border border-amber-200 text-amber-900 text-sm rounded-lg shadow-sm flex items-start gap-2"
           >
-            <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
-            {cause}
-          </span>
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0 mt-1.5" />
+            <span>{cause}</span>
+          </li>
         ))}
-      </div>
+      </ul>
     </div>
   );
 }

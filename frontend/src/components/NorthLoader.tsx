@@ -1,75 +1,147 @@
 "use client";
 
-import { useState, useEffect, useRef, useMemo } from "react";
-import { motion } from "framer-motion";
+import { useEffect, useRef } from "react";
+import { motion, useMotionValue } from "framer-motion";
+import {
+  NORTH_ANGLE as NORTH_ANGLE_MATH,
+  decelValue,
+  getClockwiseStopTarget,
+} from "@/lib/ui/compassLoaderMath";
 
 interface NorthLoaderProps {
   show: boolean;
   /** Called when the needle has locked to North and held (so parent can transition). */
   onLockComplete?: () => void;
+  /**
+   * When true, start the slow-down + stop sequence.
+   * If omitted, defaults to true.
+   */
+  readyToLock?: boolean;
 }
 
-/** When to start the "lock to North" animation (ms after loader shows). */
-const LOCK_START_MS = 1600;
+/** Optional delay after `readyToLock` becomes true before deceleration begins. */
+const LOCK_START_MS = 0;
 /** Duration of the lock animation (ease-out to 0°). */
 const LOCK_DURATION_MS = 500;
 /** Hold at North before parent is allowed to transition (so needle clearly stops first). */
 const HOLD_AT_NORTH_MS = 400;
 
-/** Random angle between -15° and -45° (wiggle West but not fully North). */
-function randomWiggleAngle(): number {
-  // Negative angles rotate counter-clockwise (towards West).
-  return -(15 + Math.random() * 30);
-}
+export default function NorthLoader({
+  show,
+  onLockComplete,
+  readyToLock = true,
+}: NorthLoaderProps) {
+  // Keep the needle spinning at a constant speed until we "lock" it near the end.
+  const needleRotate = useMotionValue<number>(NORTH_ANGLE_MATH);
+  const rafRef = useRef<ReturnType<typeof requestAnimationFrame> | null>(null);
+  const onLockCalledRef = useRef(false);
+  const onLockCompleteRef = useRef<(() => void) | undefined>(onLockComplete);
+  const readyToLockRef = useRef<boolean>(readyToLock);
 
-/** Final \"true North\" angle: straight up from horizontal. */
-const NORTH_ANGLE = -90;
-
-export default function NorthLoader({ show, onLockComplete }: NorthLoaderProps) {
-  // Random angle for this load so wiggle keyframes are correct on first paint.
-  const wiggleTarget = useMemo(() => (show ? randomWiggleAngle() : 0), [show]);
-  const [locking, setLocking] = useState(false);
-  const lockTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const lockCompleteRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  // When loader shows: start lock timer. When hide: clear timers.
+  // Keep the latest callback without restarting the animation effect.
   useEffect(() => {
+    onLockCompleteRef.current = onLockComplete;
+  }, [onLockComplete]);
+
+  useEffect(() => {
+    readyToLockRef.current = readyToLock;
+  }, [readyToLock]);
+
+  // Start/stop the spin and schedule the final slow-down + stop at 12 o'clock.
+  useEffect(() => {
+    const stop = () => {
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+    };
+    let holdTimer: ReturnType<typeof setTimeout> | null = null;
+    let stopped = false;
+
+    const cleanup = () => {
+      stopped = true;
+      stop();
+      if (holdTimer) clearTimeout(holdTimer);
+      holdTimer = null;
+    };
+
     if (!show) {
-      setLocking(false);
-      if (lockTimerRef.current) {
-        clearTimeout(lockTimerRef.current);
-        lockTimerRef.current = null;
-      }
-      if (lockCompleteRef.current) {
-        clearTimeout(lockCompleteRef.current);
-        lockCompleteRef.current = null;
-      }
+      cleanup();
+      onLockCalledRef.current = false;
+      needleRotate.set(NORTH_ANGLE_MATH);
       return;
     }
-    setLocking(false);
-    lockTimerRef.current = setTimeout(() => {
-      setLocking(true);
-      lockTimerRef.current = null;
-      // After lock animation + hold, notify parent so it can transition.
-      lockCompleteRef.current = setTimeout(() => {
-        onLockComplete?.();
-        lockCompleteRef.current = null;
-      }, (LOCK_DURATION_MS + HOLD_AT_NORTH_MS));
-    }, LOCK_START_MS);
-    return () => {
-      if (lockTimerRef.current) clearTimeout(lockTimerRef.current);
-      if (lockCompleteRef.current) clearTimeout(lockCompleteRef.current);
-    };
-  }, [show, onLockComplete]);
 
-  // Keyframes for visible wiggle: oscillate around North (up) instead of swinging West.
-  const wiggleKeyframes = [
-    NORTH_ANGLE - 8,
-    NORTH_ANGLE + 6,
-    NORTH_ANGLE - 4,
-    NORTH_ANGLE + 2,
-    NORTH_ANGLE,
-  ];
+    stopped = false;
+    onLockCalledRef.current = false;
+    needleRotate.set(NORTH_ANGLE_MATH);
+
+    type Mode = "spin" | "decel" | "hold";
+    let mode: Mode = "spin";
+
+    const speedDegPerSec = 360;
+    const spinStartTs = performance.now();
+
+    let decelFromAngle = NORTH_ANGLE_MATH;
+    let decelToAngle = NORTH_ANGLE_MATH;
+    let decelStartTs = 0;
+
+    const beginDecel = () => {
+      if (mode !== "spin") return;
+
+      mode = "decel";
+      decelFromAngle = needleRotate.get();
+      decelToAngle = getClockwiseStopTarget(decelFromAngle, NORTH_ANGLE_MATH);
+      decelStartTs = performance.now();
+
+      if (LOCK_START_MS > 0) {
+        // If configured, delay starting decel for a short window.
+        mode = "hold";
+        needleRotate.set(decelFromAngle);
+        if (holdTimer) clearTimeout(holdTimer);
+        holdTimer = setTimeout(() => {
+          if (stopped) return;
+          mode = "decel";
+          decelStartTs = performance.now();
+        }, LOCK_START_MS);
+      }
+    };
+
+    const tick = (now: number) => {
+      if (stopped) return;
+
+      if (mode === "spin") {
+        const elapsedSec = (now - spinStartTs) / 1000;
+        needleRotate.set(NORTH_ANGLE_MATH + elapsedSec * speedDegPerSec);
+        if (readyToLockRef.current) beginDecel();
+      } else if (mode === "decel") {
+        const elapsedMs = now - decelStartTs;
+        const value = decelValue(decelFromAngle, decelToAngle, elapsedMs, LOCK_DURATION_MS);
+        needleRotate.set(value);
+
+        if (elapsedMs >= LOCK_DURATION_MS) {
+          needleRotate.set(decelToAngle);
+          mode = "hold";
+          if (holdTimer) clearTimeout(holdTimer);
+          holdTimer = setTimeout(() => {
+            if (stopped) return;
+            if (!onLockCalledRef.current) {
+              onLockCalledRef.current = true;
+              onLockCompleteRef.current?.();
+            }
+            cleanup();
+          }, HOLD_AT_NORTH_MS);
+        }
+      } else {
+        // hold mode
+        needleRotate.set(decelToAngle);
+      }
+
+      rafRef.current = requestAnimationFrame(tick);
+    };
+
+    rafRef.current = requestAnimationFrame(tick);
+
+    return cleanup;
+  }, [show, needleRotate]);
 
   return (
     <div
@@ -102,15 +174,7 @@ export default function NorthLoader({ show, onLockComplete }: NorthLoaderProps) 
           <motion.div
             className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none"
             initial={false}
-            animate={{
-              // Wiggle West (negative angles), then rotate up to a clear North angle.
-              rotate: locking ? [wiggleTarget, NORTH_ANGLE + 12, NORTH_ANGLE] : show ? wiggleKeyframes : 0,
-            }}
-            transition={
-              locking
-                ? { type: "tween", duration: LOCK_DURATION_MS / 1000, ease: "easeOut", times: [0, 0.55, 1] }
-                : { type: "tween", duration: 1.1, times: [0, 0.28, 0.52, 0.76, 1], ease: "easeInOut" }
-            }
+            style={{ rotate: needleRotate }}
           >
             <svg
               viewBox="0 0 56 56"
