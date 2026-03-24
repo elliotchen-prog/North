@@ -133,30 +133,150 @@ export async function getResourcesForPlan(planText: string): Promise<ResourceArt
   return parseResourcesResponse(body);
 }
 
-async function mockResourcesForPlan(_planText: string): Promise<ResourceArticle[]> {
-  // Keep mock simple; real behavior comes from the runtime model call.
-  await new Promise((r) => setTimeout(r, 250));
+/** Topic-aware mock resources for demo / when NEXT_PUBLIC_USE_MOCK_API=true. */
+async function mockResourcesForPlan(planText: string): Promise<ResourceArticle[]> {
+  await new Promise((r) => setTimeout(r, 200));
+  const lower = (planText || "").toLowerCase();
+
+  if (lower.includes("depress") || lower.includes("mood") || lower.includes("mental")) {
+    return [
+      {
+        id: "mock-dep-1",
+        title: "Understanding the Science of Mood",
+        description:
+          "How sleep, stress, and daily rhythms shape how you feel—and what you can influence first.",
+        readTime: "8 min read",
+        source: "North Library",
+        url: "https://www.nimh.nih.gov/health/topics/depression",
+      },
+      {
+        id: "mock-dep-2",
+        title: "5 Daily Habits for Mental Clarity",
+        description: "Small, evidence-backed routines you can stack without a full life overhaul.",
+        readTime: "6 min read",
+        source: "Behavioral Insights",
+        url: "https://www.mind.org.uk/information-support/types-of-mental-health-problems/stress/",
+      },
+      {
+        id: "mock-dep-3",
+        title: "What to Do on a Heavy Day",
+        description: "A gentle checklist when energy is low and you still want one kind step forward.",
+        readTime: "4 min read",
+        source: "North Guides",
+        url: "https://www.mind.org.uk/information-support/looking-after-your-mental-health/self-care/",
+      },
+      {
+        id: "mock-dep-4",
+        title: "When to Seek Professional Support",
+        description: "Signals that talking to a clinician or therapist is the right next move.",
+        readTime: "5 min read",
+        source: "NIMH",
+        url: "https://www.nimh.nih.gov/health/find-help",
+      },
+    ];
+  }
+
+  if (
+    lower.includes("work") ||
+    lower.includes("job") ||
+    lower.includes("career") ||
+    lower.includes("burnout") ||
+    lower.includes("manager") ||
+    lower.includes("priorit")
+  ) {
+    return [
+      {
+        id: "mock-work-1",
+        title: "Resetting Your Relationship With Work",
+        description: "Separate identity from your inbox while still moving your career forward.",
+        readTime: "7 min read",
+        source: "North Careers",
+        url: "https://www.mindtools.com/a4v4m2b/choosing-your-next-step",
+      },
+      {
+        id: "mock-work-2",
+        title: "Designing a Sustainable Workday",
+        description: "Balance focus blocks, admin, and recovery without the guilt spiral.",
+        readTime: "9 min read",
+        source: "Productivity Lab",
+        url: "https://www.apa.org/topics/stress/manage-social-support",
+      },
+      {
+        id: "mock-work-3",
+        title: "Talking to Your Manager About Capacity",
+        description: "Language that sets boundaries while staying collaborative.",
+        readTime: "5 min read",
+        source: "North Playbook",
+        url: "https://www.apa.org/topics/stress/work",
+      },
+    ];
+  }
+
+  if (
+    lower.includes("relationship") ||
+    lower.includes("roommate") ||
+    lower.includes("partner") ||
+    lower.includes("conflict") ||
+    lower.includes("boundary") ||
+    lower.includes("conversation")
+  ) {
+    return [
+      {
+        id: "mock-rel-1",
+        title: "From Reacting to Responding",
+        description: "A short pause pattern for tense conversations so things don’t escalate.",
+        readTime: "5 min read",
+        source: "North Communication",
+        url: "https://www.apa.org/topics/anger/control",
+      },
+      {
+        id: "mock-rel-2",
+        title: "How to Share a Hard Truth",
+        description: "Scripts for sensitive topics without blindsiding the other person.",
+        readTime: "7 min read",
+        source: "North Guides",
+        url: "https://psychcentral.com/lib/benefits-of-positive-communication",
+      },
+      {
+        id: "mock-rel-3",
+        title: "Repairing After an Argument",
+        description: "Small moves that rebuild trust after things got heated.",
+        readTime: "4 min read",
+        source: "Everyday Psychology",
+        url: "https://www.psychologytoday.com/us/basics/conflict-resolution",
+      },
+    ];
+  }
+
   return [
     {
-      id: "mock-1",
-      title: "How to turn a plan into action (quick framework)",
-      description: "A short guide to choosing the next right step and reducing overwhelm.",
-      readTime: "5 min read",
-      source: "North Guides",
+      id: "mock-gen-1",
+      title: "Zooming Out: A 10-Minute Life Review",
+      description: "See which life area is asking for attention right now, without a big workshop.",
+      readTime: "10 min read",
+      source: "North Library",
       url: "https://www.mindtools.com/a4v4m2b/choosing-your-next-step",
     },
     {
-      id: "mock-2",
-      title: "Evidence-backed stress coping strategies",
-      description: "Practical techniques that help you steady yourself and act with clarity.",
+      id: "mock-gen-2",
+      title: "Making Progress When You Feel Stuck",
+      description: "Low-pressure moves that still count as momentum toward the life you want.",
       readTime: "6 min read",
-      source: "Mind",
-      url: "https://www.mind.org.uk/information-support/types-of-mental-health-problems/stress/",
+      source: "Behavioral Insights",
+      url: "https://www.apa.org/topics/stress/manage",
     },
     {
-      id: "mock-3",
-      title: "Boundary setting basics",
-      description: "Learn how boundaries create capacity and reduce friction.",
+      id: "mock-gen-3",
+      title: "Designing Your Next Week With Intention",
+      description: "Turn vague goals into one to three concrete commitments for the week ahead.",
+      readTime: "8 min read",
+      source: "North Playbook",
+      url: "https://www.mind.org.uk/information-support/looking-after-your-mental-health/self-care/",
+    },
+    {
+      id: "mock-gen-4",
+      title: "Healthy Boundaries 101",
+      description: "Why boundaries create capacity when your plate is full.",
       readTime: "8 min read",
       source: "Psych Central",
       url: "https://psychcentral.com/lib/how-to-create-and-maintain-healthy-boundaries",
