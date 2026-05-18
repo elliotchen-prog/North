@@ -1,7 +1,8 @@
 import type { NextApiRequest, NextApiResponse } from "next";
+import { clientMessageForOpenRouterError } from "@/lib/openrouter-client-message";
 
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
-const DEFAULT_MODEL = "openrouter/hunter-alpha";
+const DEFAULT_MODEL = "xiaomi/mimo-v2-pro";
 
 function ensureString(value: unknown): string {
   if (value == null) return "";
@@ -78,8 +79,10 @@ Rules:
 
     if (!llmRes.ok) {
       const err = data.error as { message?: string } | undefined;
-      const msg = err?.message ?? (data.message as string) ?? llmRes.statusText;
-      return res.status(llmRes.status).json({ message: msg || "OpenRouter API request failed" });
+      const raw = err?.message ?? (data.message as string) ?? llmRes.statusText;
+      return res.status(llmRes.status).json({
+        message: clientMessageForOpenRouterError(raw, llmRes.status),
+      });
     }
 
     const choices = data.choices as Array<{ message?: { content?: string } }> | undefined;

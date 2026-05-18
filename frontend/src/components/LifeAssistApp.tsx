@@ -88,7 +88,7 @@ export default function LifeAssistApp() {
   return (
     <>
       {error && (
-        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[100] rounded-lg bg-red-50 border border-red-200 text-red-800 px-4 py-2 text-sm shadow">
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[100] max-w-xl rounded-lg bg-red-50 border border-red-200 text-red-800 px-4 py-2 text-sm text-center shadow">
           {error}
         </div>
       )}
